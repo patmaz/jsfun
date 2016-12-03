@@ -1,3 +1,4 @@
+// module
 (function(win, doc, $){
     var botModule = (function(){
         var _randomStuff = ['Boom',
@@ -16,7 +17,14 @@
         function _storeConversation(msg, reply) {
             var message = msg,
                 reply = reply;
-            _conversation.push([message, reply]);
+            _conversation.push({
+                message: message,
+                reply: reply
+            });
+        }
+
+        function getConversation(){
+            return _conversation;
         }
 
         function storeAndShow(msg){
@@ -30,10 +38,15 @@
 
         //reveal module
         return{
-            storeAndShow: storeAndShow
+            storeAndShow: storeAndShow,
+            getConversation: getConversation
         }
     })();
 
+    // decide what is in the global scope
+    if(!win.botModule) win.botModule = botModule;
+
+    // use it
     $(doc).ready(function($) {
         $('.msg').on('keypress', function(e){
             if(e.which === 13){
@@ -44,7 +57,63 @@
             }
         });
     });
-
-    // decide what is in the global scope
-    if(!win.botModule) win.botModule = botModule;
 })(window, document, jQuery);
+
+// singleton
+(function(win, $){
+    var historySingleton = (function(){
+        var instance;
+
+        function init(){
+            var _$wrapper = $('<div id="history"></div>');
+
+            function _getConversation(){
+                return win.botModule.getConversation();
+            }
+
+            function _wrapConversation(){
+                var conversation = _getConversation();
+                _$wrapper.empty();
+                for(let i = 0; i < conversation.length; i++){
+                    _$wrapper.append(i + conversation[i].message + '|' + conversation[i].reply + '<br>');
+                }
+            }
+
+            function loadHistory($target){
+                _wrapConversation();
+                if($target.find('#history').length){
+                    $target.find('#history').remove();
+                    $target.append(_$wrapper);
+                } else {
+                    $target.append(_$wrapper);
+                }
+            }
+
+            return {
+                loadHistory: loadHistory
+            };
+        }
+
+        // make sure that there is only one object
+        return {
+            getInstance: function(){
+                if(!instance){
+                    instance = init();
+                }
+
+                return instance;
+            }
+        }
+    })();
+
+    // this same object is used in different logics/actions
+    $(win.document).ready(function(){
+        $(win.document).on('keypress', function(e){
+            if(e.keyCode == 32){
+                e.preventDefault();
+                var history = historySingleton.getInstance();
+                history.loadHistory($('body'));
+            }
+        });
+    });
+})(window, jQuery);
