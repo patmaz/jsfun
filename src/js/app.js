@@ -1,5 +1,5 @@
 // module
-(function(win, doc, $){
+(function(win, doc){
     var botModule = (function(){
         var _randomStuff = ['Boom',
                             'boom, boom',
@@ -23,10 +23,10 @@
             });
         }
 
-        function _keepListShort($list, length){
-            var isTooLong = $list.children('li').length > length;
+        function _keepListShort(list, length){
+            var isTooLong = list.children.length > length;
             if(isTooLong){
-                $list.children('li').last().remove();
+                list.removeChild(list.lastChild);
             }
         }
 
@@ -36,13 +36,15 @@
 
         function storeAndShow(msg){
             var reply = _getRandomStuff(),
-                $list = $('.list');
+                list = doc.querySelectorAll('.list')[0],
+                newConverstionItem = doc.createElement('div');
             _storeConversation(msg, reply);
-            $list.prepend('<li><ul>' +
+            newConverstionItem.innerHTML = '<li><ul>' +
                                 '<li>Komputer: ' + reply + '</li>' +
                                 '<li>Ty: ' + msg + '</li>' +
-                                '</ul></li>');
-            _keepListShort($list, 6);
+                                '</ul></li>';
+            list.insertBefore(newConverstionItem, list.firstChild);
+            _keepListShort(list, 6);
         }
 
         console.log('I am not lazy');
@@ -58,25 +60,27 @@
     if(!win.botModule) win.botModule = botModule;
 
     // use it
-    $(doc).ready(function($) {
-        $('.msg').on('keypress', function(e){
+    document.addEventListener('DOMContentLoaded', function() {
+       var msgInput = doc.querySelector('.msg');
+       msgInput.addEventListener('keypress', function(e){
             if(e.which === 13){
-                var msg = $(this).val();
+                var msg = this.value;
                 win.botModule.storeAndShow(msg);
-                $(this).val('');
+                this.value = '';
                 return false;
             }
-        });
+       });
     });
-})(window, document, jQuery);
+})(window, document);
 
 // singleton (lazy)
-(function(win, $){
+(function(win, doc){
     var historySingleton = (function(){
         var instance;
 
         function init(){
-            var _$wrapper = $('<div id="history"></div>');
+            var _wrapper = doc.createElement('div');
+            _wrapper.setAttribute('id', 'history');
 
             function _getConversation(){
                 return win.botModule.getConversation();
@@ -84,19 +88,21 @@
 
             function _wrapConversation(){
                 var conversation = _getConversation();
-                _$wrapper.empty();
+                _wrapper.innerHTML = '';
                 for(let i = 0; i < conversation.length; i++){
-                    _$wrapper.append(i + conversation[i].message + '|' + conversation[i].reply + '<br>');
+                    var newItem = doc.createElement('div');
+                    newItem.innerHTML = i + '|' + conversation[i].message + '|' + conversation[i].reply + '<br>';
+                    _wrapper.appendChild(newItem);
                 }
             }
 
-            function loadHistory($target){
+            function loadHistory(target){
                 _wrapConversation();
-                if($target.find('#history').length){
-                    $target.find('#history').remove();
-                    $target.append(_$wrapper);
+                if(doc.getElementById('history')){
+                    doc.getElementById('history').parentNode.removeChild(doc.getElementById('history'));
+                    target.appendChild(_wrapper);
                 } else {
-                    $target.append(_$wrapper);
+                    target.appendChild(_wrapper);
                 }
             }
 
@@ -121,10 +127,10 @@
     })();
 
     // this same object is used in different logics/actions
-    $(win.document).ready(function(){
-        $('.show-history').on('click', function(e){
+    doc.addEventListener('DOMContentLoaded', function(e){
+        doc.querySelectorAll('.show-history')[0].addEventListener('click', function(e){
             var history = historySingleton.getInstance();
-            history.loadHistory($('body'));
+            history.loadHistory(doc.getElementsByTagName('body')[0]);
         });
     });
-})(window, jQuery);
+})(window, document);
