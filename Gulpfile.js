@@ -8,7 +8,7 @@ var browserSync = require('browser-sync').create();
 
 var paths = {
     templates: './src/*.jade',
-    scripts: ['./src/js/jquery-3.1.1.js', './src/js/app.js']
+    scripts: ['./src/js/app.js']
 }
 
 gulp.task('templates', function() {
